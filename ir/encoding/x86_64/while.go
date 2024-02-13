@@ -11,6 +11,7 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage,GoErrorStringFormat
 func encode_IR_While(i *statements.IR_While, ctx *IR_Context) ([]lib.Instruction, error) {
 	jmpSize := uint(2)
 	if i.Condition.ReturnType(ctx) != TBool {

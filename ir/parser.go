@@ -91,7 +91,7 @@ func (p Parser) Success(value interface{}) Parser {
 
 func (p Parser) Many() Parser {
 	return func(str string) *ParseResult {
-		result := []interface{}{}
+		var result []interface{}
 		for {
 			subResult := p(str)
 			if subResult.Result == nil {
@@ -134,7 +134,7 @@ func ParseList(p Parser) Parser {
 
 func ParseListWithSeparator(p, separator Parser) Parser {
 	return func(str string) *ParseResult {
-		result := []interface{}{}
+		var result []interface{}
 		for {
 			sub := p(str)
 			if sub.Result == nil && len(result) == 0 {
@@ -212,7 +212,7 @@ func ParseSimpleType() Parser {
 }
 func ParseTypeArray() Parser {
 	return ParseString("[]").And(Lazy(ParseType)).Fmap(func(p *ParseResult) *ParseResult {
-		return ParseSuccess(&shared.TArray{p.Result.(shared.Type), 0}, p.Rest)
+		return ParseSuccess(&shared.TArray{ItemType: p.Result.(shared.Type)}, p.Rest)
 	})
 }
 
@@ -302,7 +302,7 @@ func ParseByteRange(start, end byte) Parser {
 
 func InterfaceArrayToByteArray(values interface{}) []byte {
 	valueArray := values.([]interface{})
-	chars := []byte{}
+	var chars []byte
 	for _, v := range valueArray {
 		chars = append(chars, v.(byte))
 	}
@@ -311,7 +311,7 @@ func InterfaceArrayToByteArray(values interface{}) []byte {
 
 func InterfaceArrayToIRExpressionArray(values interface{}) []shared.IRExpression {
 	valueArray := values.([]interface{})
-	chars := []shared.IRExpression{}
+	var chars []shared.IRExpression
 	for _, v := range valueArray {
 		chars = append(chars, v.(shared.IRExpression))
 	}
@@ -408,6 +408,7 @@ func ParseVariable() Parser {
 	})
 }
 
+//goland:noinspection GoErrorStringFormat
 func ParseOperator() Parser {
 	return ParseSingleExpression().AndThen(func(op1 *ParseResult) Parser {
 		return ParseSpace().And(OneOf([]Parser{
@@ -554,8 +555,8 @@ func ParseFunction() Parser {
 	return ParseString("func").And(ParseSpace()).And(ParseByte('(')).And(ParseFunctionDefArgs()).AndThen(func(args *ParseResult) Parser {
 		return ParseByte(')').And(ParseSpace()).And(ParseType()).AndThen(func(returns *ParseResult) Parser {
 			return ParseBlock().Fmap(func(body *ParseResult) *ParseResult {
-				argNames := []string{}
-				argTypes := []shared.Type{}
+				var argNames []string
+				var argTypes []shared.Type
 				for _, pair := range args.Result.([]interface{}) {
 					lst := pair.([]interface{})
 					argNames = append(argNames, lst[0].(string))
@@ -577,8 +578,8 @@ func ParseFunctionDef() Parser {
 		return ParseSpace().And(ParseByte('(')).And(ParseFunctionDefArgs()).AndThen(func(args *ParseResult) Parser {
 			return ParseByte(')').And(ParseSpace()).And(ParseType()).AndThen(func(returns *ParseResult) Parser {
 				return ParseBlock().Fmap(func(body *ParseResult) *ParseResult {
-					argNames := []string{}
-					argTypes := []shared.Type{}
+					var argNames []string
+					var argTypes []shared.Type
 					for _, pair := range args.Result.([]interface{}) {
 						lst := pair.([]interface{})
 						argNames = append(argNames, lst[0].(string))
@@ -601,6 +602,7 @@ func ParseFunctionArgs() Parser {
 	return ParseList(ParseExpression())
 }
 
+//goland:noinspection GoErrorStringFormat
 func ParseFunctionCall() Parser {
 	return ParseIdent().AndThen(func(v *ParseResult) Parser {
 		return ParseByte('(').And(ParseSpace()).And(ParseFunctionArgs()).AndThen(func(args *ParseResult) Parser {
@@ -726,6 +728,7 @@ func ParseArrayIndex() Parser {
 	})
 }
 
+//goland:noinspection GoErrorStringFormat
 func ParseIR(str string) (shared.IR, error) {
 	result := ParseStatement()(str)
 	if result.Error != nil {

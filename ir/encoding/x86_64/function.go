@@ -10,14 +10,16 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage
 func encode_IR_Function(i *expr.IR_Function, ctx *IR_Context, target lib.Operand) ([]lib.Instruction, error) {
 	ownLength := uint(7)
-	diff := uint(ctx.InstructionPointer+ownLength) - uint(ctx.Segments.GetAddress(i.Address))
-	result := []lib.Instruction{x86_64.LEA(&encoding.RIPRelative{encoding.Int32(int32(-diff))}, target)}
+	diff := ctx.InstructionPointer + ownLength - uint(ctx.Segments.GetAddress(i.Address))
+	result := []lib.Instruction{x86_64.LEA(&encoding.RIPRelative{Displacement: encoding.Int32(int32(-diff))}, target)}
 	ctx.AddInstruction(result...)
 	return result, nil
 }
 
+//goland:noinspection GoSnakeCaseUsage,GoErrorStringFormat
 func encode_IR_Function_for_DataSection(b *expr.IR_Function, ctx *IR_Context, segments *Segments) error {
 
 	// TODO: restore rbx, rbp, r12-r15
@@ -48,9 +50,13 @@ func encode_IR_Function_for_DataSection(b *expr.IR_Function, ctx *IR_Context, se
 	if err != nil {
 		return err
 	}
-	for _, i := range instr {
-		fmt.Println(i)
+
+	if ctx.Debug {
+		for _, i := range instr {
+			fmt.Println(i)
+		}
 	}
+
 	bytes, err := lib.Instructions(instr).Encode()
 	if err != nil {
 		return err

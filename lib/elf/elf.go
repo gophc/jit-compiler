@@ -3,9 +3,7 @@ package elf
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-
-	"github.com/bspaans/jit-compiler/lib"
+	"os"
 )
 
 /*
@@ -34,6 +32,7 @@ func NewELF() *ELF {
 	return &ELF{}
 }
 
+//goland:noinspection GoErrorStringFormat
 func ParseELF(r *bytes.Reader) (*ELF, error) {
 	header, err := ParseELFHeader(r)
 	if err != nil {
@@ -59,15 +58,16 @@ func ParseELF(r *bytes.Reader) (*ELF, error) {
 	}, nil
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func ParseELFFile(path string) (*ELF, error) {
-	f, err := ioutil.ReadFile(path)
+	f, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 	return ParseELF(bytes.NewReader(f))
 }
 
-// Encodes the ELF header, program header table and section header table (TODO).
+// EncodeHeaders Encodes the ELF header, program header table and section header table (TODO).
 // Does not copy .Data!
 func (e *ELF) EncodeHeaders() ([]byte, error) {
 	headerSize := 64
@@ -112,9 +112,9 @@ func (e *ELF) GetSection(name string) *Section {
 	return nil
 }
 
-// Demo function.
+// CreateTinyBinary Demo function.
 // Don't use this in anything serious: it puts data in an executable segment.
-func CreateTinyBinary(m lib.MachineCode, path string) error {
+func CreateTinyBinary(m []uint8, path string) error {
 	elf := NewELF()
 	elf.ELFHeader = NewELFHeader()
 
@@ -146,7 +146,7 @@ func CreateTinyBinary(m lib.MachineCode, path string) error {
 	}
 	fmt.Println(elfReloaded.String())
 
-	return ioutil.WriteFile(path, result, 0755)
+	return os.WriteFile(path, result, 0755)
 }
 
 /*

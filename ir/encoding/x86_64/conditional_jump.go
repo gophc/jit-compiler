@@ -101,9 +101,8 @@ func conditionalJump(ctx *IR_Context, condition IRExpression, stmtLen int) ([]li
 	if err != nil {
 		return nil, err
 	}
-	for _, inst := range instr {
-		ctx.AddInstruction(inst)
-		result = append(result, inst)
-	}
+
+	result = append(result, instr...)
+	ctx.AddInstruction(instr...)
 	return result, nil
 }

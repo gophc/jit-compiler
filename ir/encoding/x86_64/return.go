@@ -11,8 +11,9 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage,GoErrorStringFormat
 func encode_IR_Return(i *statements.IR_Return, ctx *IR_Context) ([]lib.Instruction, error) {
-	result := []lib.Instruction{}
+	var result []lib.Instruction
 	var reg lib.Operand
 	var ok bool
 	if i.Expr.Type() == Variable {
@@ -52,13 +53,19 @@ func encode_IR_Return(i *statements.IR_Return, ctx *IR_Context) ([]lib.Instructi
 		reg = cast
 	}
 	target := ctx.PeekReturn()
+
+	if r, ok := ctx.LastReturn.(*statements.IR_Return); ok && r == i {
+		if t, ok := target.(*encoding.DisplacedRegister); ok && t.Name == "rsp" {
+			t.Displacement = 24
+		}
+	}
+
 	instr := []lib.Instruction{
 		x86_64.MOV(reg.(*encoding.Register).Get64BitRegister(), target),
 		x86_64.RETURN(),
 	}
-	for _, inst := range instr {
-		ctx.AddInstruction(inst)
-		result = append(result, inst)
-	}
+
+	result = append(result, instr...)
+	ctx.AddInstruction(instr...)
 	return result, nil
 }

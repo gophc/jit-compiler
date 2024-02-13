@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/bspaans/jit-compiler/ir"
@@ -11,6 +10,7 @@ import (
 	"github.com/bspaans/jit-compiler/ir/shared"
 )
 
+//goland:noinspection GoBoolExpressions
 func REPL() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -34,10 +34,11 @@ func REPL() {
 	}
 }
 
+//goland:noinspection GoBoolExpressions
 func CompileFiles() {
 	source := ""
 	for _, file := range os.Args[1:] {
-		text, err := ioutil.ReadFile(file)
+		text, err := os.ReadFile(file)
 		if err != nil {
 			panic(err)
 		}

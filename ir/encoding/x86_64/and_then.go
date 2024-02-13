@@ -6,6 +6,7 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage
 func encode_IR_AndThen(i *statements.IR_AndThen, ctx *IR_Context) ([]lib.Instruction, error) {
 	result, err := encodeStatement(i.Stmt1, ctx)
 	if err != nil {
@@ -15,8 +16,7 @@ func encode_IR_AndThen(i *statements.IR_AndThen, ctx *IR_Context) ([]lib.Instruc
 	if err != nil {
 		return nil, err
 	}
-	for _, instr := range s2 {
-		result = append(result, instr)
-	}
+
+	result = append(result, s2...)
 	return result, nil
 }

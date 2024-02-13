@@ -18,6 +18,7 @@ type Allocator interface {
 	Copy() Allocator
 }
 
+//goland:noinspection GoSnakeCaseUsage
 type IR_Context struct {
 	Architecture Architecture
 	ABI          ABI
@@ -32,19 +33,28 @@ type IR_Context struct {
 	Commit             bool // if false turns AddInstruction into a noop
 
 	instructions []lib.Instruction
+
+	LastReturn IR
+	Debug      bool
 }
 
-func NewIRContext(arch Architecture, abi ABI) *IR_Context {
+func NewIRContext(arch Architecture, abi ABI, opts ...func(*IR_Context) *IR_Context) *IR_Context {
 	ctx := &IR_Context{
 		Architecture:       arch,
 		ABI:                abi,
 		VariableMap:        map[string]lib.Operand{},
 		VariableTypes:      map[string]Type{},
-		ReturnOperandStack: []lib.Operand{&encoding.DisplacedRegister{encoding.Rsp, 8}},
+		ReturnOperandStack: []lib.Operand{&encoding.DisplacedRegister{Register: encoding.Rsp, Displacement: 8}},
 		InstructionPointer: 2,
 		StackPointer:       8,
 		Commit:             true,
 		instructions:       []lib.Instruction{},
+	}
+
+	if len(opts) > 0 {
+		for _, opt := range opts {
+			ctx = opt(ctx)
+		}
 	}
 	ctx.Allocator = arch.GetAllocator()
 	return ctx
@@ -72,11 +82,11 @@ func (i *IR_Context) Copy() *IR_Context {
 	for arg, ty := range i.VariableTypes {
 		variableTypes[arg] = ty
 	}
-	instructions := []lib.Instruction{}
+	var instructions []lib.Instruction
 	for _, d := range i.instructions {
 		instructions = append(instructions, d)
 	}
-	returns := []lib.Operand{}
+	var returns []lib.Operand
 	for _, d := range i.ReturnOperandStack {
 		returns = append(returns, d)
 	}
@@ -99,7 +109,7 @@ func (i *IR_Context) AddInstruction(instr ...lib.Instruction) {
 	if i.Commit {
 		for _, in := range instr {
 			i.instructions = append(i.instructions, in)
-			length, _ := lib.Instruction_Length(in)
+			length, _ := lib.InstructionLength(in)
 			i.InstructionPointer += uint(length)
 		}
 	}

@@ -13,10 +13,10 @@ var TargetArch = &x86_64.X86_64{}
 var TargetABI = x86_64.NewABI_AMDSystemV()
 
 var ShouldRun = [][]IR{
-	[]IR{NewIR_Assignment("a", NewIR_ByteArray([]uint8("test"))),
+	{NewIR_Assignment("a", NewIR_ByteArray([]uint8("test"))),
 		NewIR_Return(NewIR_Variable("a")),
 	},
-	[]IR{NewIR_If(NewIR_Bool(true),
+	{NewIR_If(NewIR_Bool(true),
 		NewIR_Assignment("f", NewIR_Uint64(53)),
 		NewIR_Assignment("f", NewIR_Uint64(54)),
 	),
@@ -24,6 +24,7 @@ var ShouldRun = [][]IR{
 	},
 }
 
+//goland:noinspection GoBoolExpressions
 func Test_ShouldRun(t *testing.T) {
 	for _, ir := range ShouldRun {
 		debug := false
@@ -35,6 +36,51 @@ func Test_ShouldRun(t *testing.T) {
 	}
 }
 
+//goland:noinspection GoBoolExpressions,GoUnhandledErrorResult
+func Test_DbgParseExecute_Happy(t *testing.T) {
+	units := []string{
+		// int64 (default)
+		`f = 53`,
+	}
+	for _, ir := range units {
+		i, err := ParseIR(ir + "; return f")
+		if err != nil {
+			t.Fatal(err, "in", ir)
+		}
+		debug := false
+		b, err := Compile(TargetArch, TargetABI, []IR{i}, debug)
+		if err != nil {
+			if !debug {
+				Compile(TargetArch, TargetABI, []IR{i}, true)
+			}
+			t.Fatal(err, "in", ir)
+		}
+		value := b.Execute(debug)
+		if value != 53 {
+			if !debug {
+				Compile(TargetArch, TargetABI, []IR{i}, true)
+				b.Execute(true)
+			}
+			t.Fatal("Expecting 53 got", value, "in", ir, "\n", b)
+		}
+
+		transformed := i.SSA_Transform(NewSSA_Context())
+		b2, err := Compile(TargetArch, TargetABI, []IR{transformed}, debug)
+		if err != nil {
+			t.Fatal(err)
+		}
+		value = b2.Execute(debug)
+		if value != 53 {
+			if !debug {
+				Compile(TargetArch, TargetABI, []IR{transformed}, true)
+			}
+			t.Fatal("Expecting 53 got", value, "in", ir, " after SSA transform\n", transformed)
+		}
+
+	}
+}
+
+//goland:noinspection GoBoolExpressions,GoUnhandledErrorResult
 func Test_ParseExecute_Happy(t *testing.T) {
 	units := []string{
 
@@ -283,7 +329,7 @@ func Test_ParseExecute_Happy(t *testing.T) {
 			t.Fatal(err, "in", ir)
 		}
 		value := b.Execute(debug)
-		if value != int(53) {
+		if value != 53 {
 			if !debug {
 				Compile(TargetArch, TargetABI, []IR{i}, true)
 				b.Execute(true)
@@ -297,7 +343,7 @@ func Test_ParseExecute_Happy(t *testing.T) {
 			t.Fatal(err)
 		}
 		value = b2.Execute(debug)
-		if value != int(53) {
+		if value != 53 {
 			if !debug {
 				Compile(TargetArch, TargetABI, []IR{transformed}, true)
 			}
@@ -305,72 +351,96 @@ func Test_ParseExecute_Happy(t *testing.T) {
 		}
 
 	}
-
 }
 
+//goland:noinspection GoBoolExpressions
+func Test_DbgExecute_Result(t *testing.T) {
+	var units = [][]IR{
+		{
+			NewIR_Assignment("a",
+				NewIR_Function(&TFunction{ReturnType: TUint64, Args: []Type{TUint64}, ArgNames: []string{"z"}},
+					NewIR_Return(NewIR_Add(NewIR_Variable("z"), NewIR_Uint64(3))))),
+			NewIR_Assignment("f", NewIR_Call("a", []IRExpression{NewIR_Uint64(50)})),
+		},
+	}
+	for _, ir := range units {
+		i := append(ir, NewIR_Return(NewIR_Variable("f")))
+		debug := false
+		b, err := Compile(TargetArch, TargetABI, i, debug)
+		if err != nil {
+			t.Fatal(err)
+		}
+		value := b.Execute(debug)
+		if value != 53 {
+			t.Fatal("Expecting 53 got", value, "in", ir, "\n", b)
+		}
+	}
+}
+
+//goland:noinspection GoBoolExpressions
 func Test_Execute_Result(t *testing.T) {
 	var units = [][]IR{
-		[]IR{NewIR_Assignment("f", NewIR_Uint64(53))},
-		[]IR{NewIR_If(NewIR_Bool(true),
+		{NewIR_Assignment("f", NewIR_Uint64(53))},
+		{NewIR_If(NewIR_Bool(true),
 			NewIR_Assignment("f", NewIR_Uint64(53)),
 			NewIR_Assignment("f", NewIR_Uint64(54)),
 		)},
-		[]IR{NewIR_Assignment("f", NewIR_Uint64(3)),
+		{NewIR_Assignment("f", NewIR_Uint64(3)),
 			NewIR_If(NewIR_Bool(true),
 				NewIR_Assignment("f", NewIR_Uint64(53)),
 				NewIR_Assignment("f", NewIR_Uint64(54)),
 			)},
-		[]IR{NewIR_Assignment("f", NewIR_Uint64(53)),
+		{NewIR_Assignment("f", NewIR_Uint64(53)),
 			NewIR_Assignment("g", NewIR_Syscall(NewIR_Uint64(uint64(IR_Syscall_Linux_Write)), []IRExpression{NewIR_Uint64(1), NewIR_ByteArray([]uint8("hello world\n")), NewIR_Uint64(uint64(12))})),
 		},
-		[]IR{NewIR_Assignment("f", NewIR_Uint64(0)),
+		{NewIR_Assignment("f", NewIR_Uint64(0)),
 			NewIR_While(NewIR_Not(NewIR_Equals(NewIR_Variable("f"), NewIR_Uint64(53))),
 				NewIR_Assignment("f", NewIR_Add(NewIR_Variable("f"), NewIR_Uint64(1))),
 			),
 		},
-		[]IR{MustParseIR(`f = 0; while f != 53 { f = f + 1 }`)},
-		[]IR{NewIR_Assignment("f", NewIR_Add(NewIR_Uint64(51), NewIR_Uint64(2)))},
-		[]IR{NewIR_Assignment("f", NewIR_Cast(NewIR_Add(NewIR_Float64(51), NewIR_Float64(2)), TUint64))},
-		[]IR{
+		{MustParseIR(`f = 0; while f != 53 { f = f + 1 }`)},
+		{NewIR_Assignment("f", NewIR_Add(NewIR_Uint64(51), NewIR_Uint64(2)))},
+		{NewIR_Assignment("f", NewIR_Cast(NewIR_Add(NewIR_Float64(51), NewIR_Float64(2)), TUint64))},
+		{
 			NewIR_Assignment("g", NewIR_Float64(53.343)),
 			NewIR_Assignment("f", NewIR_Cast(NewIR_Variable("g"), TUint64)),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("g", NewIR_Float64(26.5)),
 			NewIR_Assignment("h", NewIR_Float64(2.0)),
 			NewIR_Assignment("i", NewIR_Mul(NewIR_Variable("g"), NewIR_Variable("h"))),
 			NewIR_Assignment("f", NewIR_Cast(NewIR_Variable("i"), TUint64)),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("g", NewIR_Float64(106)),
 			NewIR_Assignment("h", NewIR_Float64(2.0)),
 			NewIR_Assignment("i", NewIR_Div(NewIR_Variable("g"), NewIR_Variable("h"))),
 			NewIR_Assignment("f", NewIR_Cast(NewIR_Variable("i"), TUint64)),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("g", NewIR_Float64(55)),
 			NewIR_Assignment("h", NewIR_Float64(2.0)),
 			NewIR_Assignment("i", NewIR_Sub(NewIR_Variable("g"), NewIR_Variable("h"))),
 			NewIR_Assignment("f", NewIR_Cast(NewIR_Variable("i"), TUint64)),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("a",
-				NewIR_Function(&TFunction{TUint64, []Type{TUint64}, []string{"z"}},
+				NewIR_Function(&TFunction{ReturnType: TUint64, Args: []Type{TUint64}, ArgNames: []string{"z"}},
 					NewIR_Return(NewIR_Add(NewIR_Variable("z"), NewIR_Uint64(3))))),
 			NewIR_Assignment("f", NewIR_Call("a", []IRExpression{NewIR_Uint64(50)})),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("a", NewIR_ByteArray([]uint8{50, 51, 52, 53})),
 			NewIR_Assignment("f", NewIR_ArrayIndex(NewIR_Variable("a"), NewIR_Uint64(3))),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("b", NewIR_Struct(&TStruct{
 				FieldTypes: []Type{TUint64},
 				Fields:     []string{"first_field"},
 			}, []IRExpression{NewIR_Uint64(53)})),
 			NewIR_Assignment("f", NewIR_StructField(NewIR_Variable("b"), "first_field")),
 		},
-		[]IR{
+		{
 			NewIR_Assignment("b", NewIR_Struct(&TStruct{
 				FieldTypes: []Type{TUint64, TUint64},
 				Fields:     []string{"first_field", "second_field"},
@@ -386,7 +456,7 @@ func Test_Execute_Result(t *testing.T) {
 			t.Fatal(err)
 		}
 		value := b.Execute(debug)
-		if value != int(53) {
+		if value != 53 {
 			t.Fatal("Expecting 53 got", value, "in", ir, "\n", b)
 		}
 	}

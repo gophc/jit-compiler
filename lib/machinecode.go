@@ -3,7 +3,7 @@ package lib
 import (
 	"encoding/hex"
 	"fmt"
-	"syscall"
+	"github.com/bspaans/jit-compiler/platform"
 	"unsafe"
 )
 
@@ -25,20 +25,18 @@ func (m MachineCode) String() string {
 }
 
 func (m MachineCode) Execute(debug bool) int {
-	mmapFunc, err := syscall.Mmap(
-		-1,
-		0,
-		len(m),
-		syscall.PROT_READ|syscall.PROT_WRITE|syscall.PROT_EXEC, syscall.MAP_PRIVATE|mmapFlags,
-	)
+	mmapFunc, err := platform.MmapCodeSegment(len(m))
+
 	if err != nil {
 		fmt.Printf("mmap err: %v", err)
 	}
 	copy(mmapFunc, m)
-	type execFunc func() int
-	unsafeFunc := (uintptr)(unsafe.Pointer(&mmapFunc))
-	f := *(*execFunc)(unsafe.Pointer(&unsafeFunc))
-	value := f()
+
+	value := nativecall(
+		uintptr(unsafe.Pointer(&mmapFunc[0])),
+		&callEngine{},
+	)
+
 	if debug {
 		fmt.Println("\nResult :", value)
 		fmt.Printf("Hex    : %x\n", value)
@@ -47,6 +45,5 @@ func (m MachineCode) Execute(debug bool) int {
 	return value
 }
 func (m MachineCode) Add(m2 MachineCode) MachineCode {
-	m = append(m, m2...)
-	return m
+	return append(m, m2...)
 }

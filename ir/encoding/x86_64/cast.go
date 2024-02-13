@@ -10,9 +10,10 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage,GoErrorStringFormat
 func encode_IR_Cast(i *expr.IR_Cast, ctx *IR_Context, target lib.Operand) ([]lib.Instruction, error) {
 	ctx.AddInstruction("cast " + encoding.Comment(i.String()))
-	result := []lib.Instruction{}
+	var result []lib.Instruction
 	valueType := i.Value.ReturnType(ctx)
 	if valueType == nil {
 		return nil, fmt.Errorf("nil return type in %s", i.Value.String())
@@ -24,13 +25,11 @@ func encode_IR_Cast(i *expr.IR_Cast, ctx *IR_Context, target lib.Operand) ([]lib
 		} else if valueType == TUint32 {
 			tmpReg := ctx.AllocateRegister(valueType)
 			defer ctx.DeallocateRegister(tmpReg)
-			expr, err := encodeExpression(i.Value, ctx, tmpReg)
+			exprs, err := encodeExpression(i.Value, ctx, tmpReg)
 			if err != nil {
 				return nil, err
 			}
-			for _, code := range expr {
-				result = append(result, code)
-			}
+			result = append(result, exprs...)
 			mov := x86_64.MOV(tmpReg.(*encoding.Register).Get64BitRegister(), target)
 			ctx.AddInstruction(mov)
 			result = append(result, mov)
@@ -38,13 +37,11 @@ func encode_IR_Cast(i *expr.IR_Cast, ctx *IR_Context, target lib.Operand) ([]lib
 		} else if valueType == TUint16 || valueType == TUint8 {
 			tmpReg := ctx.AllocateRegister(valueType)
 			defer ctx.DeallocateRegister(tmpReg)
-			expr, err := encodeExpression(i.Value, ctx, tmpReg)
+			exprs, err := encodeExpression(i.Value, ctx, tmpReg)
 			if err != nil {
 				return nil, err
 			}
-			for _, code := range expr {
-				result = append(result, code)
-			}
+			result = append(result, exprs...)
 			mov := x86_64.MOVZX(tmpReg, target)
 			ctx.AddInstruction(mov)
 			result = append(result, mov)
@@ -53,13 +50,11 @@ func encode_IR_Cast(i *expr.IR_Cast, ctx *IR_Context, target lib.Operand) ([]lib
 			tmpReg := ctx.AllocateRegister(TFloat64)
 			defer ctx.DeallocateRegister(tmpReg)
 
-			expr, err := encodeExpression(i.Value, ctx, tmpReg)
+			exprs, err := encodeExpression(i.Value, ctx, tmpReg)
 			if err != nil {
 				return nil, err
 			}
-			for _, code := range expr {
-				result = append(result, code)
-			}
+			result = append(result, exprs...)
 			cvt := x86_64.CVTTSD2SI(tmpReg, target)
 			ctx.AddInstruction(cvt)
 			result = append(result, cvt)
@@ -96,13 +91,11 @@ func encode_IR_Cast(i *expr.IR_Cast, ctx *IR_Context, target lib.Operand) ([]lib
 			tmpReg := ctx.AllocateRegister(TUint64)
 			defer ctx.DeallocateRegister(tmpReg)
 
-			expr, err := encodeExpression(i.Value, ctx, tmpReg)
+			exprs, err := encodeExpression(i.Value, ctx, tmpReg)
 			if err != nil {
 				return nil, err
 			}
-			for _, code := range expr {
-				result = append(result, code)
-			}
+			result = append(result, exprs...)
 			cvt := x86_64.CVTSI2SD(tmpReg, target)
 			ctx.AddInstruction(cvt)
 			result = append(result, cvt)

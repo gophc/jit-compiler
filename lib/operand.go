@@ -3,13 +3,16 @@ package lib
 //go:generate stringer -type=Type
 type Type uint8
 
+//goland:noinspection GoSnakeCaseUsage
 const (
 	T_Register          Type = iota // e.g. %rax
 	T_IndirectRegister  Type = iota // e.g. (%rax)
 	T_RIPRelative       Type = iota // e.g. -$0x18(%rip)
 	T_SIBRegister       Type = iota // e.g. (%rax, %rcx, 8)  (the address of %rxc * 8 + %rax)
 	T_DisplacedRegister Type = iota // e.g. 0x9(%rax)
-	// TODO
+
+	// TODO what??
+
 	T_DisplacedSIBRegister Type = iota // e.g. 0x9(%rax, %rcx, 8) the address of %rcx * 8 + %rax + 9)
 	T_Uint8                Type = iota
 	T_Uint16               Type = iota
@@ -26,11 +29,13 @@ type Operand interface {
 	Width() Size
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func IsRegister(op Operand) bool {
 	t := op.Type()
 	return t == T_Register || t == T_IndirectRegister || t == T_DisplacedRegister || t == T_RIPRelative || t == T_SIBRegister
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func IsInt(op Operand) bool {
 	t := op.Type()
 	return t == T_Uint8 || t == T_Uint16 || t == T_Uint32 || t == T_Uint64

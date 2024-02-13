@@ -13,24 +13,19 @@ type Instruction interface {
 type Instructions []Instruction
 
 func (i Instructions) Encode() (MachineCode, error) {
-	result := []uint8{}
+	var result []uint8
 	for _, instr := range i {
 		b, err := instr.Encode()
 		if err != nil {
 			return nil, err
 		}
-		for _, code := range b {
-			result = append(result, code)
-		}
+		result = append(result, b...)
 	}
 	return result, nil
 }
 
 func (i Instructions) Add(i2 []Instruction) Instructions {
-	for _, instr := range i2 {
-		i = append(i, instr)
-	}
-	return i
+	return append(i, i2...)
 }
 
 func (i Instructions) String() string {
@@ -42,7 +37,7 @@ func (i Instructions) String() string {
 }
 
 func CompileInstruction(instr []Instruction, debug bool) (MachineCode, error) {
-	result := []uint8{}
+	var result []uint8
 	address := 0
 	for _, i := range instr {
 		b, err := i.Encode()
@@ -54,16 +49,14 @@ func CompileInstruction(instr []Instruction, debug bool) (MachineCode, error) {
 		}
 		address += len(b)
 		if debug {
-			fmt.Println(MachineCode(b))
+			fmt.Println(b)
 		}
-		for _, code := range b {
-			result = append(result, code)
-		}
+		result = append(result, b...)
 	}
 	return result, nil
 }
 
-func Instruction_Length(instr Instruction) (int, error) {
+func InstructionLength(instr Instruction) (int, error) {
 	b, err := instr.Encode()
 	if err != nil {
 		return 0, err

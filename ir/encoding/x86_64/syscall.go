@@ -18,9 +18,7 @@ func encode_IR_Syscall(i *expr.IR_Syscall, ctx *IR_Context, target lib.Operand) 
 	if err != nil {
 		return nil, err
 	}
-	for _, inst := range instr {
-		result = append(result, inst)
-	}
+	result = append(result, instr...)
 	tmpTarget := ctx.AllocateRegister(TUint64)
 	defer ctx.DeallocateRegister(tmpTarget)
 
@@ -28,10 +26,8 @@ func encode_IR_Syscall(i *expr.IR_Syscall, ctx *IR_Context, target lib.Operand) 
 		x86_64.SYSCALL(),
 		x86_64.MOV(encoding.Rax, tmpTarget),
 	}
-	for _, inst := range instr {
-		result = append(result, inst)
-		ctx.AddInstruction(inst)
-	}
+	result = append(result, instr...)
+	ctx.AddInstruction(instr...)
 	restore := RestoreRegisters(ctx, clobbered)
 	result = result.Add(restore)
 	mov := x86_64.MOV(tmpTarget, target)

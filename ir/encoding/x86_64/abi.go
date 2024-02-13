@@ -9,17 +9,20 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
-// The calling convention of the System V AMD64 ABI is followed on Solaris,
+// ABI_AMDSystemV The calling convention of the System V AMD64 ABI is followed on Solaris,
 // Linux, FreeBSD, macOS, and is the de facto standard among Unix and Unix-like
 // operating systems. The first six integer or pointer arguments are passed in
 // registers RDI, RSI, RDX, RCX, R8, R9 (R10 is used as a static chain pointer
 // in case of nested functions[25]:21), while XMM0, XMM1, XMM2, XMM3, XMM4,
 // XMM5, XMM6 and XMM7 are used for the first floating point arguments.
+//
+//goland:noinspection GoSnakeCaseUsage
 type ABI_AMDSystemV struct {
 	intTargets   []*encoding.Register
 	floatTargets []*encoding.Register
 }
 
+//goland:noinspection GoSnakeCaseUsage
 func NewABI_AMDSystemV() *ABI_AMDSystemV {
 	return &ABI_AMDSystemV{
 		intTargets:   []*encoding.Register{encoding.Rdi, encoding.Rsi, encoding.Rdx, encoding.Rcx, encoding.R10, encoding.R8, encoding.R9},
@@ -29,7 +32,7 @@ func NewABI_AMDSystemV() *ABI_AMDSystemV {
 func (a *ABI_AMDSystemV) GetRegistersForArgs(args []Type) []*encoding.Register {
 	intRegisterIx := 0
 	floatRegisterIx := 0
-	result := []*encoding.Register{}
+	var result []*encoding.Register
 
 	var reg *encoding.Register
 	for _, arg := range args {
@@ -52,10 +55,10 @@ func (a *ABI_AMDSystemV) ReturnTypeToOperand(arg Type) lib.Operand {
 	return encoding.Rax
 }
 
-// returns instructions and clobbered registers
+// PreserveRegisters returns instructions and clobbered registers
 func PreserveRegisters(ctx *IR_Context, argTypes []Type, returnType Type) (lib.Instructions, map[lib.Operand]lib.Operand, []lib.Operand) {
-	clobbered := []lib.Operand{}
-	result := []lib.Instruction{}
+	var clobbered []lib.Operand
+	var result []lib.Instruction
 	mapping := map[lib.Operand]lib.Operand{}
 
 	// push the return register; TODO: check if in use?
@@ -93,18 +96,20 @@ func PreserveRegisters(ctx *IR_Context, argTypes []Type, returnType Type) (lib.I
 		}
 		if inUse {
 			offset := (len(clobbered) - mappedClobbered) * int(arg.Width())
-			mapping[reg] = &encoding.DisplacedRegister{encoding.Rsp, uint8(offset)}
+			mapping[reg] = &encoding.DisplacedRegister{Register: encoding.Rsp, Displacement: uint8(offset)}
 			mappedClobbered += 1
 		}
 	}
 	return result, mapping, clobbered
 }
 
+//goland:noinspection GoSnakeCaseUsage,GoErrorStringFormat
 func ABI_Call_Setup(ctx *IR_Context, args []IRExpression, returnType Type) (lib.Instructions, map[lib.Operand]lib.Operand, []lib.Operand, error) {
 	argTypes := make([]Type, len(args))
 	for i, arg := range args {
 		argTypes[i] = arg.ReturnType(ctx)
 		if argTypes[i] == nil {
+			//goland:noinspection GoErrorStringFormat
 			return nil, nil, nil, fmt.Errorf("Unknown type for value: %s", arg)
 		}
 	}
@@ -149,7 +154,7 @@ func ABI_Call_Setup(ctx *IR_Context, args []IRExpression, returnType Type) (lib.
 
 func RestoreRegisters(ctx *IR_Context, clobbered []lib.Operand) lib.Instructions {
 	// Pop in reverse order
-	result := []lib.Instruction{}
+	var result []lib.Instruction
 	for j := len(clobbered) - 1; j >= 0; j-- {
 		reg := clobbered[j]
 		result = append(result, x86_64.POP(reg))

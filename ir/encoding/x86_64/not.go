@@ -11,11 +11,12 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage,GoErrorStringFormat
 func encode_IR_Not(i *expr.IR_Not, ctx *IR_Context, target lib.Operand, includeSETE bool) ([]lib.Instruction, error) {
 
 	var reg1 lib.Operand
 
-	result := []lib.Instruction{}
+	var result []lib.Instruction
 
 	switch c := i.Op1.(type) {
 	case *expr.IR_Variable:
@@ -124,16 +125,15 @@ func encode_IR_Not(i *expr.IR_Not, ctx *IR_Context, target lib.Operand, includeS
 	if includeSETE {
 		tmpReg := ctx.AllocateRegister(TUint64)
 		defer ctx.DeallocateRegister(tmpReg)
-		instr := []lib.Instruction{}
+		var instr []lib.Instruction
 		// TODO: use test?
 		instr = append(instr, x86_64.XOR(tmpReg, tmpReg))
 		instr = append(instr, x86_64.CMP_immediate(0, reg1))
 		instr = append(instr, x86_64.SETE(tmpReg.(*encoding.Register).Get8BitRegister()))
 		instr = append(instr, x86_64.MOV(tmpReg.(*encoding.Register).ForOperandWidth(target.Width()), target))
-		for _, inst := range instr {
-			result = append(result, inst)
-			ctx.AddInstruction(inst)
-		}
+
+		result = append(result, instr...)
+		ctx.AddInstruction(instr...)
 	}
 	return result, nil
 }

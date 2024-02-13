@@ -37,9 +37,7 @@ func encode_IR_If(i *statements.IR_If, ctx *IR_Context) ([]lib.Instruction, erro
 	if err != nil {
 		return nil, err
 	}
-	for _, instr := range s1 {
-		result = append(result, instr)
-	}
+	result = append(result, s1...)
 	jmp := x86_64.JMP(encoding.Uint8(stmt2Len))
 	ctx.AddInstruction(jmp)
 	result = append(result, jmp)
@@ -48,8 +46,6 @@ func encode_IR_If(i *statements.IR_If, ctx *IR_Context) ([]lib.Instruction, erro
 	if err != nil {
 		return nil, err
 	}
-	for _, instr := range s2 {
-		result = append(result, instr)
-	}
+	result = append(result, s2...)
 	return result, nil
 }

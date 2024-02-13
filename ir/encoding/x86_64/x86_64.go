@@ -10,6 +10,7 @@ import (
 	"github.com/bspaans/jit-compiler/lib"
 )
 
+//goland:noinspection GoSnakeCaseUsage
 type X86_64 struct {
 }
 
@@ -31,6 +32,7 @@ func (x *X86_64) EncodeDataSection(stmts []IR, ctx *IR_Context) (*Segments, erro
 	return segments, nil
 }
 
+//goland:noinspection GoErrorStringFormat
 func encodeExpression(e IRExpression, ctx *IR_Context, target lib.Operand) ([]lib.Instruction, error) {
 	switch v := e.(type) {
 	case *expr.IR_Add:
@@ -102,6 +104,7 @@ func encodeExpression(e IRExpression, ctx *IR_Context, target lib.Operand) ([]li
 	}
 }
 
+//goland:noinspection GoErrorStringFormat
 func encodeStatement(stmt IR, ctx *IR_Context) ([]lib.Instruction, error) {
 	switch v := stmt.(type) {
 	case *statements.IR_AndThen:
@@ -123,6 +126,7 @@ func encodeStatement(stmt IR, ctx *IR_Context) ([]lib.Instruction, error) {
 	}
 }
 
+//goland:noinspection GoErrorStringFormat
 func encodeDataSection(i IR, ctx *IR_Context, segments *Segments) error {
 	switch v := i.(type) {
 	case *statements.IR_AndThen:
@@ -156,6 +160,7 @@ func encodeDataSection(i IR, ctx *IR_Context, segments *Segments) error {
 	return nil
 }
 
+//goland:noinspection GoErrorStringFormat
 func encodeExpressionForDataSection(i IRExpression, ctx *IR_Context, segments *Segments) error {
 	encodeOperators := func(op1, op2 IRExpression) error {
 		if err := encodeExpressionForDataSection(op1, ctx, segments); err != nil {
@@ -225,6 +230,7 @@ func encodeExpressionForDataSection(i IRExpression, ctx *IR_Context, segments *S
 	default:
 		return fmt.Errorf("Unsupported '%s' expr in x86_64 data section encoder", i.String())
 	}
+	//goland:noinspection GoUnreachableCode
 	return nil
 }
 
@@ -232,6 +238,7 @@ func (x *X86_64) GetAllocator() Allocator {
 	return NewX86_64_Allocator()
 }
 
+//goland:noinspection GoSnakeCaseUsage,GoNameStartsWithPackageName
 type X86_64_Allocator struct {
 	Registers               []bool
 	RegistersAllocated      uint8
@@ -239,6 +246,7 @@ type X86_64_Allocator struct {
 	FloatRegistersAllocated uint8
 }
 
+//goland:noinspection GoSnakeCaseUsage
 func NewX86_64_Allocator() *X86_64_Allocator {
 	x := &X86_64_Allocator{
 		Registers:               make([]bool, 16),

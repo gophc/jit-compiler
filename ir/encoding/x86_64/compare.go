@@ -68,10 +68,8 @@ func order(op1, op2 IRExpression, ctx *IR_Context, target lib.Operand, includeSE
 			sete = signedOp(reg8)
 		}
 		mov := x86_64.MOV(tmpReg.(*encoding.Register).ForOperandWidth(target.Width()), target)
-		result = append(result, sete)
-		result = append(result, mov)
-		ctx.AddInstruction(sete)
-		ctx.AddInstruction(mov)
+		result = append(result, sete, mov)
+		ctx.AddInstruction(sete, mov)
 	}
 	return result, nil
 }
